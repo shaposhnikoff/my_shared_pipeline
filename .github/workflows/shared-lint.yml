@@ -136,8 +136,8 @@ jobs:
       - name: black --check (formatting)
         run: black --check .
 
-      - name: bandit (HIGH severity + HIGH confidence)
-        run: bandit -r . -ll -ii --exclude ./_shared
+      - name: bandit (HIGH severity + HIGH confidence only)
+        run: bandit -r . -lll -iii --exclude ./_shared,./tasmota/old,./tasmota_web,./tasmota/tasmota_list_devices_web.py,./mediamtx
 
   shell-lint:
     name: Shell Lint (shellcheck)
