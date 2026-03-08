@@ -55,7 +55,7 @@ jobs:
           config_file: .checkov.yml
 
       # Upload results to GitHub Security tab — runs even if checkov fails
-      - uses: github/codeql-action/upload-sarif@f09c1c0a094aa517d4f3abde240c468bea46614c  # v3.28.5
+      - uses: github/codeql-action/upload-sarif@820e3160e279568db735cee8ed8f8e77a6da7818  # v3.32.6
         if: always()
         with:
           sarif_file: results.sarif
@@ -84,7 +84,7 @@ jobs:
           format: sarif
           output: trivy.sarif
 
-      - uses: github/codeql-action/upload-sarif@f09c1c0a094aa517d4f3abde240c468bea46614c  # v3.28.5
+      - uses: github/codeql-action/upload-sarif@820e3160e279568db735cee8ed8f8e77a6da7818  # v3.32.6
         if: always()
         with:
           sarif_file: trivy.sarif
