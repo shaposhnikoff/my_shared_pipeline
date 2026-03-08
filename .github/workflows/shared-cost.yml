@@ -62,7 +62,7 @@ jobs:
           aws-region: us-east-1
           role-session-name: gha-cost-${{ github.run_id }}
 
-      - uses: infracost/actions/setup@d27a77c98e4e1b00b3e9dcfef1fd5fb95f4c8a99  # v3.0.0
+      - uses: infracost/actions/setup@e9d6e6cd65e168e76b0de50ff9957d2fe8bb1832  # v3.0.1
         with:
           api-key: ${{ secrets.infracost-api-key }}
 
