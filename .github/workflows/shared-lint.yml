@@ -2,15 +2,9 @@
 #
 # Reusable workflow: all linters (Stage 1 + Stage 2)
 #
-# Stage 1 — FAST (blocking):
-#   secrets:         gitleaks — scans full git history for secrets
-#   yaml-lint:       yamllint — YAML syntax and style
-#
-# Stage 2 — CODE (blocking):
-#   python-lint:     ruff + black + bandit
-#   shell-lint:      shellcheck
-#   dockerfile-lint: hadolint
-#   terraform-lint:  terraform fmt/validate + tflint
+# Config file precedence (each linter):
+#   1. Local file in calling repo root  (repo-specific overrides)
+#   2. Shared file from my_shared_pipeline (sensible defaults)
 #
 # Called by consuming repos via:
 #   uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-lint.yml@main
@@ -45,9 +39,9 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # —————————————————————————————————————————————
+  # ─────────────────────────────────────────────
   # Stage 1: FAST — fail early on cheap checks
-  # —————————————————————————————————————————————
+  # ─────────────────────────────────────────────
 
   secrets:
     name: Secrets Scan (gitleaks)
@@ -69,7 +63,6 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      # Checkout shared pipeline repo to get config files (requirements-lint.txt, .yamllint.yml)
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: shaposhnikoff/my_shared_pipeline
@@ -86,12 +79,22 @@ jobs:
           /tmp/lint-venv/bin/pip install -r _shared/requirements-lint.txt
           echo "/tmp/lint-venv/bin" >> "$GITHUB_PATH"
 
-      - name: Run yamllint
-        run: yamllint -c _shared/.yamllint.yml .
+      - name: Run yamllint (local config preferred over shared)
+        run: |
+          if [ -f .yamllint.yml ]; then
+            echo "Using local .yamllint.yml"
+            yamllint -c .yamllint.yml .
+          elif [ -f .yamllint.yaml ]; then
+            echo "Using local .yamllint.yaml"
+            yamllint -c .yamllint.yaml .
+          else
+            echo "Using shared .yamllint.yml"
+            yamllint -c _shared/.yamllint.yml .
+          fi
 
-  # —————————————————————————————————————————————
+  # ─────────────────────────────────────────────
   # Stage 2: CODE — language-specific linters
-  # —————————————————————————————————————————————
+  # ─────────────────────────────────────────────
 
   python-lint:
     name: Python Lint (ruff + black + bandit)
@@ -100,7 +103,6 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      # Checkout shared pipeline repo to get requirements-lint.txt and ruff.toml
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
           repository: shaposhnikoff/my_shared_pipeline
@@ -118,8 +120,15 @@ jobs:
           /tmp/lint-venv/bin/pip install -r _shared/requirements-lint.txt
           echo "/tmp/lint-venv/bin" >> "$GITHUB_PATH"
 
-      - name: ruff check (lint + isort + pyflakes)
-        run: ruff check --config _shared/ruff.toml .
+      - name: ruff check (local ruff.toml preferred over shared)
+        run: |
+          if [ -f ruff.toml ] || [ -f pyproject.toml ]; then
+            echo "Using local ruff config"
+            ruff check .
+          else
+            echo "Using shared ruff.toml"
+            ruff check --config _shared/ruff.toml .
+          fi
 
       - name: black --check (formatting)
         run: black --check .
@@ -143,9 +152,21 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
+      - name: Check for Dockerfiles
+        id: df-check
+        run: |
+          if find . -name 'Dockerfile*' -o -name '*.dockerfile' | grep -q .; then
+            echo "has_dockerfiles=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "has_dockerfiles=false" >> "$GITHUB_OUTPUT"
+            echo "No Dockerfiles found, skipping hadolint."
+          fi
+
       - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
+        if: steps.df-check.outputs.has_dockerfiles == 'true'
         with:
           recursive: true
+          # Use local .hadolint.yaml if present (hadolint-action picks it up automatically)
 
   terraform-lint:
     name: Terraform Lint (fmt + validate + tflint)
