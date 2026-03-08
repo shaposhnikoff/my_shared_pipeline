@@ -122,8 +122,11 @@ jobs:
 
       - name: ruff check (local ruff.toml preferred over shared)
         run: |
-          if [ -f ruff.toml ] || [ -f pyproject.toml ]; then
-            echo "Using local ruff config"
+          if [ -f ruff.toml ]; then
+            echo "Using local ruff.toml (overrides subdirectory pyproject.toml configs)"
+            ruff check --config ruff.toml .
+          elif [ -f pyproject.toml ]; then
+            echo "Using local pyproject.toml ruff config"
             ruff check .
           else
             echo "Using shared ruff.toml"
