@@ -1,0 +1,100 @@
+# .github/workflows/shared-cost.yml
+#
+# Reusable workflow: Infracost cost estimation (Stage 4 — ADVISORY)
+#
+# Uses a two-run comparison pattern:
+#   1. Checkout base branch → infracost breakdown → /tmp/infracost-base.json
+#   2. Checkout PR branch   → infracost diff      → /tmp/infracost-diff.json
+#   3. Post PR comment with the cost DELTA (+$X/mo or -$X/mo)
+#
+# This is advisory — never blocks a PR merge.
+#
+# OIDC auth:
+#   Pass aws-role-arn input if Terraform reads remote state from S3
+#   or the AWS provider needs credentials to resolve resource prices.
+#
+# Called by consuming repos via:
+#   uses: org/shared-pipelines/.github/workflows/shared-cost.yml@v1
+
+name: Shared Cost Estimation
+
+on:
+  workflow_call:
+    secrets:
+      infracost-api-key:
+        description: "Infracost API key (register free at infracost.io)"
+        required: true
+    inputs:
+      terraform-dir:
+        description: "Path to Terraform root module"
+        type: string
+        default: "."
+      aws-role-arn:
+        description: "Optional OIDC IAM Role ARN for AWS authentication"
+        type: string
+        default: ""
+
+# pull-requests: write is required to create/update the PR cost comment
+permissions:
+  contents: read
+  pull-requests: write
+  id-token: write  # for OIDC (conditionally used)
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  infracost:
+    name: Infracost (cost delta)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0  # needed to checkout base branch SHA below
+
+      # OIDC AWS auth — only runs if aws-role-arn is provided
+      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.5
+        if: inputs.aws-role-arn != ''
+        with:
+          role-to-assume: ${{ inputs.aws-role-arn }}
+          aws-region: us-east-1
+          role-session-name: gha-cost-${{ github.run_id }}
+
+      - uses: infracost/actions/setup@d27a77c98e4e1b00b3e9dcfef1fd5fb95f4c8a99  # v3.0.0
+        with:
+          api-key: ${{ secrets.infracost-api-key }}
+
+      # Step 1: Calculate baseline cost on the base branch
+      - name: Checkout base branch
+        run: git checkout ${{ github.event.pull_request.base.sha }}
+
+      - name: Infracost breakdown (base branch)
+        run: |
+          infracost breakdown \
+            --path "${{ inputs.terraform-dir }}" \
+            --format json \
+            --out-file /tmp/infracost-base.json
+
+      # Step 2: Calculate cost on the PR branch
+      - name: Checkout PR branch
+        run: git checkout ${{ github.sha }}
+
+      - name: Infracost diff (PR vs base)
+        run: |
+          infracost diff \
+            --path "${{ inputs.terraform-dir }}" \
+            --compare-to /tmp/infracost-base.json \
+            --format json \
+            --out-file /tmp/infracost-diff.json
+
+      # Step 3: Post or update PR comment with cost delta
+      - name: Post PR comment
+        run: |
+          infracost comment github \
+            --path /tmp/infracost-diff.json \
+            --repo "${{ github.repository }}" \
+            --pull-request "${{ github.event.pull_request.number }}" \
+            --github-token "${{ secrets.GITHUB_TOKEN }}" \
+            --behavior update

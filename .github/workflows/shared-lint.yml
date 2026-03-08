@@ -1,0 +1,166 @@
+# .github/workflows/shared-lint.yml
+#
+# Reusable workflow: all linters (Stage 1 + Stage 2)
+#
+# Stage 1 — FAST (blocking):
+#   secrets:         gitleaks — scans full git history for secrets
+#   yaml-lint:       yamllint — YAML syntax and style
+#
+# Stage 2 — CODE (blocking):
+#   python-lint:     ruff + black + bandit
+#   shell-lint:      shellcheck
+#   dockerfile-lint: hadolint
+#   terraform-lint:  terraform fmt/validate + tflint
+#
+# Called by consuming repos via:
+#   uses: org/shared-pipelines/.github/workflows/shared-lint.yml@v1
+
+name: Shared Lint
+
+on:
+  workflow_call:
+    inputs:
+      python-version:
+        description: "Python version to use for linting"
+        type: string
+        default: "3.11"
+      terraform-version:
+        description: "Terraform version for fmt/validate/tflint"
+        type: string
+        default: "1.9.x"
+      working-directory:
+        description: "Working directory for Terraform jobs"
+        type: string
+        default: "."
+
+# Minimal permissions — read-only by default
+permissions:
+  contents: read
+
+# Cancel in-progress runs on the same branch to avoid wasted compute
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Stage 1: FAST — fail early on cheap checks
+  # ─────────────────────────────────────────────
+
+  secrets:
+    name: Secrets Scan (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+        with:
+          fetch-depth: 0  # gitleaks needs full history to scan all commits
+
+      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b024a1bb7cf9b1a50d3b8d  # v2.3.9
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  yaml-lint:
+    name: YAML Lint
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2a  # v5.3.3
+        with:
+          python-version: ${{ inputs.python-version }}
+
+      - name: Install linters (pinned, via venv)
+        run: |
+          python -m venv /tmp/lint-venv
+          /tmp/lint-venv/bin/pip install -r requirements-lint.txt
+          echo "/tmp/lint-venv/bin" >> "$GITHUB_PATH"
+
+      - name: Run yamllint
+        run: yamllint -c .yamllint.yml .
+
+  # ─────────────────────────────────────────────
+  # Stage 2: CODE — language-specific linters
+  # ─────────────────────────────────────────────
+
+  python-lint:
+    name: Python Lint (ruff + black + bandit)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2a  # v5.3.3
+        with:
+          python-version: ${{ inputs.python-version }}
+          cache: pip
+
+      - name: Install linters (pinned, via venv)
+        run: |
+          python -m venv /tmp/lint-venv
+          /tmp/lint-venv/bin/pip install -r requirements-lint.txt
+          echo "/tmp/lint-venv/bin" >> "$GITHUB_PATH"
+
+      - name: ruff check (lint + isort + pyflakes)
+        run: ruff check .
+
+      - name: black --check (formatting)
+        run: black --check .
+
+      - name: bandit (HIGH severity + HIGH confidence)
+        run: bandit -r . -ll -ii
+
+  shell-lint:
+    name: Shell Lint (shellcheck)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38  # 2.0.0
+
+  dockerfile-lint:
+    name: Dockerfile Lint (hadolint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
+        with:
+          recursive: true
+
+  terraform-lint:
+    name: Terraform Lint (fmt + validate + tflint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef065  # v3.1.2
+        with:
+          terraform_version: ${{ inputs.terraform-version }}
+
+      - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf  # v4.2.2
+        with:
+          path: ~/.tflint.d/plugins
+          key: tflint-${{ hashFiles('.tflint.hcl') }}
+          restore-keys: tflint-
+
+      - uses: terraform-linters/setup-tflint@19a52fbac37dacb22a09518e4ef6ee234f2d4987  # v4.0.0
+
+      - name: terraform fmt check
+        run: terraform fmt -check -recursive -diff
+
+      - name: terraform init (no backend)
+        run: terraform init -backend=false
+
+      - name: terraform validate
+        run: terraform validate
+
+      - name: tflint
+        run: tflint --init && tflint --recursive

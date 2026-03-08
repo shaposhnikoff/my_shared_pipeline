@@ -1,0 +1,42 @@
+# .github/dependabot.yml
+#
+# Keeps GitHub Actions SHAs and Python linter versions up to date automatically.
+# Dependabot opens a PR when new versions are released — the team reviews and merges.
+#
+# This is critical when actions are SHA-pinned: without Dependabot, pinned SHAs
+# would never update and security patches would be silently missed.
+
+version: 2
+updates:
+  # ── GitHub Actions (including SHA-pinned actions) ─────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    groups:
+      # Group all minor/patch action updates into a single PR
+      actions-minor:
+        patterns: ["*"]
+        update-types: ["minor", "patch"]
+    labels:
+      - "dependencies"
+      - "github-actions"
+    commit-message:
+      prefix: "chore(deps)"
+
+  # ── Python linters (requirements-lint.txt) ────────────────────────────────
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "UTC"
+    labels:
+      - "dependencies"
+      - "python"
+    commit-message:
+      prefix: "chore(deps)"

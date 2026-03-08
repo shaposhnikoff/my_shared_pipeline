@@ -1,0 +1,90 @@
+# .github/workflows/shared-terraform.yml
+#
+# Reusable workflow: Terraform validation (Stage 3, parallel with security)
+#
+# Jobs:
+#   terraform — fmt check, init (no backend), validate, tflint (BLOCKING)
+#
+# OIDC auth:
+#   Pass aws-role-arn input to enable short-lived AWS credentials via OIDC.
+#   If omitted, no cloud auth is performed (validation only, no remote state).
+#
+# Note: cancel-in-progress is FALSE to avoid interrupting a Terraform operation
+#       mid-flight which can leave lock files in the state backend.
+#
+# Called by consuming repos via:
+#   uses: org/shared-pipelines/.github/workflows/shared-terraform.yml@v1
+
+name: Shared Terraform
+
+on:
+  workflow_call:
+    inputs:
+      terraform-version:
+        description: "Terraform version to install"
+        type: string
+        default: "1.9.x"
+      working-directory:
+        description: "Directory containing Terraform root module"
+        type: string
+        default: "."
+      aws-role-arn:
+        description: "Optional OIDC IAM Role ARN for AWS authentication"
+        type: string
+        default: ""
+
+# id-token: write is required to exchange OIDC token for cloud credentials
+permissions:
+  contents: read
+  id-token: write
+
+# Do NOT cancel in-progress — Terraform lock files can get stuck if interrupted
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  terraform:
+    name: Terraform (fmt + validate + tflint)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: ${{ inputs.working-directory }}
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+
+      # OIDC AWS auth — only runs if aws-role-arn is provided
+      # Required when Terraform reads remote state from S3 or uses AWS provider
+      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.5
+        if: inputs.aws-role-arn != ''
+        with:
+          role-to-assume: ${{ inputs.aws-role-arn }}
+          aws-region: us-east-1
+          role-session-name: gha-tf-${{ github.run_id }}
+
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef065  # v3.1.2
+        with:
+          terraform_version: ${{ inputs.terraform-version }}
+
+      # Cache tflint plugins — keyed on .tflint.hcl content hash
+      - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf  # v4.2.2
+        with:
+          path: ~/.tflint.d/plugins
+          key: tflint-${{ hashFiles('.tflint.hcl') }}
+          restore-keys: tflint-
+
+      - uses: terraform-linters/setup-tflint@19a52fbac37dacb22a09518e4ef6ee234f2d4987  # v4.0.0
+
+      - name: terraform fmt check
+        run: terraform fmt -check -recursive -diff
+
+      # -backend=false: skip backend init (no cloud credentials needed for validation)
+      - name: terraform init
+        run: terraform init -backend=false
+
+      - name: terraform validate
+        run: terraform validate
+
+      - name: tflint
+        run: tflint --init && tflint --recursive

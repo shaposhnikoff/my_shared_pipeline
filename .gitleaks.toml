@@ -1,0 +1,32 @@
+# .gitleaks.toml
+#
+# Gitleaks configuration — secret scanning for the full git history.
+# Extends the default ruleset (covers AWS, GCP, Azure, GitHub tokens, etc.)
+# Docs: https://github.com/gitleaks/gitleaks/tree/master/config
+
+[extend]
+# Start with the built-in ruleset — covers 100+ common secret types
+useDefault = true
+
+# ── Custom rules ─────────────────────────────────────────────────────────────
+# Add organization-specific patterns here
+
+[[rules]]
+description = "Internal API tokens (Periscope)"
+id          = "internal-api-token"
+regex       = '''PERISCOPE_[A-Z0-9]{32}'''
+tags        = ["internal", "api-token"]
+
+# [[rules]]
+# description = "Internal service account keys"
+# id          = "internal-sa-key"
+# regex       = '''SA_KEY_[A-Za-z0-9+/]{64}'''
+
+# ── Allowlist ─────────────────────────────────────────────────────────────────
+# Use sparingly — prefer fixing the root cause over allowlisting
+
+[allowlist]
+description = "Known false positives"
+# regexes = [
+#   '''EXAMPLE_[A-Z0-9]{32}'''  # test fixtures only
+# ]

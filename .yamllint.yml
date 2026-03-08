@@ -1,0 +1,28 @@
+# .yamllint.yml
+#
+# yamllint configuration — used in shared-lint.yml yaml-lint job
+# and mirrored in .pre-commit-config.yaml for local dev.
+#
+# Docs: https://yamllint.readthedocs.io/en/stable/rules.html
+
+extends: default
+
+rules:
+  line-length:
+    max: 120
+    level: warning  # warn but don't fail — some long lines are unavoidable in GHA
+
+  truthy:
+    allowed-values: ["true", "false"]  # disallow 'yes'/'no'/'on'/'off'
+    check-keys: false
+
+  comments:
+    min-spaces-from-content: 1  # allow single-space inline comments
+
+  braces:
+    min-spaces-inside: 0
+    max-spaces-inside: 1
+
+  brackets:
+    min-spaces-inside: 0
+    max-spaces-inside: 0

@@ -1,0 +1,26 @@
+# .checkov.yml
+#
+# Checkov configuration — IaC security scanning.
+# Docs: https://www.checkov.io/2.Basics/CLI%20Command%20Reference.html
+
+# Frameworks to scan
+framework:
+  - terraform
+  - secrets
+  - dockerfile
+  - github_actions
+
+# Soft-fail on MEDIUM and LOW — report but don't block the PR
+# HIGH and CRITICAL are hard-fail (controlled by soft_fail: false in the action)
+soft-fail-on:
+  - MEDIUM
+  - LOW
+
+# ── Skipped checks ─────────────────────────────────────────────────────────
+# Document every skip with a reason and ticket/date
+skip-check:
+  - CKV_AWS_144   # S3 cross-region replication — not required for all buckets
+                  # Revisit: add per-resource annotation when needed
+
+# ── Output ─────────────────────────────────────────────────────────────────
+compact: true     # shorter output in CI logs

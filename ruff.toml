@@ -1,0 +1,24 @@
+# ruff.toml
+#
+# Ruff configuration — linting + formatting for all Python files.
+# Docs: https://docs.astral.sh/ruff/configuration/
+
+line-length = 120
+target-version = "py311"
+
+[lint]
+select = [
+  "E",   # pycodestyle errors
+  "F",   # pyflakes (unused imports, undefined names, etc.)
+  "I",   # isort (import ordering)
+  "B",   # flake8-bugbear (likely bugs and bad practices)
+  "UP",  # pyupgrade (modernize Python syntax)
+  "S",   # flake8-bandit (security — complements bandit)
+]
+ignore = [
+  "E501",  # line too long — handled by formatter, not linter
+]
+
+[format]
+quote-style = "double"
+indent-style = "space"

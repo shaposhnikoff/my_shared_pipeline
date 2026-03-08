@@ -1,0 +1,13 @@
+# requirements-lint.txt
+#
+# Pinned linter versions for reproducible CI runs.
+# Used in shared-lint.yml via a venv (not --break-system-packages).
+#
+# Update via Dependabot (see .github/dependabot.yml) or manually:
+#   pip install --upgrade ruff black bandit yamllint
+#   pip freeze | grep -E "ruff|black|bandit|yamllint" > requirements-lint.txt
+
+ruff==0.4.4
+black==24.4.2
+bandit==1.7.8
+yamllint==1.35.1
