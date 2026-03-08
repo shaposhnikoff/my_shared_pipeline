@@ -44,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
 
-      - uses: bridgecrewio/checkov-action@c77d2e7571d74e81d94a80bbda51b1b0e76e0a5a  # v20250201
+      - uses: bridgecrewio/checkov-action@f9b0a2206b0401cad02ac0a66be2a7934a5be838  # v12.3088.0
         with:
           directory: ${{ inputs.working-directory }}
           # Extended framework coverage: IaC + secrets + Dockerfiles + GHA workflows
@@ -75,7 +75,7 @@ jobs:
           key: trivy-db-${{ github.run_id }}
           restore-keys: trivy-db-
 
-      - uses: aquasecurity/trivy-action@18f2a56c4e3b6b12b2a6b7d5e9c0a1f3d8e7b2c4  # v0.30.0
+      - uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1  # 0.35.0
         with:
           scan-type: fs
           scan-ref: .
