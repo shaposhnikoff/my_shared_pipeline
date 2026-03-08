@@ -63,7 +63,7 @@ jobs:
           aws-region: us-east-1
           role-session-name: gha-tf-${{ github.run_id }}
 
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef065  # v3.1.2
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3.1.2
         with:
           terraform_version: ${{ inputs.terraform-version }}
 
