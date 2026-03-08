@@ -23,7 +23,7 @@ on:
     secrets:
       infracost-api-key:
         description: "Infracost API key (register free at infracost.io)"
-        required: true
+        required: false
     inputs:
       terraform-dir:
         description: "Path to Terraform root module"
@@ -49,6 +49,7 @@ jobs:
     name: Infracost (cost delta)
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    if: secrets.infracost-api-key != ''
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
         with:
