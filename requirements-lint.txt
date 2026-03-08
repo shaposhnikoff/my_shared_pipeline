@@ -8,6 +8,6 @@
 #   pip freeze | grep -E "ruff|black|bandit|yamllint" > requirements-lint.txt
 
 ruff==0.4.4
-black==24.4.2
+black==26.3.0
 bandit==1.7.8
 yamllint==1.35.1
