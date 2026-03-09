@@ -119,7 +119,7 @@ PR opened / updated
          │ outputs: terraform=true|false, python=true|false, docker=true|false
          ▼
 ┌───────────────────────────────────────────────────────────┐
-│  Stage 1 + 2: LINT  (BLOCKING)  ~1–5 min                 │
+│  Stage 1 + 2: LINT  (BLOCKING)  ~1–5 min                  │
 │                                                           │
 │  Runs only if terraform OR python OR docker changed       │
 │                                                           │
@@ -138,7 +138,7 @@ PR opened / updated
 │  Stage 3a: TERRAFORM    │     │  Stage 3b: SECURITY      │
 │  (BLOCKING)  ~5–10 min  │     │  (BLOCKING)  ~5–10 min   │
 │                         │     │                          │
-│  terraform fmt -check   │     │  checkov (HIGH/CRITICAL)  │
+│  terraform fmt -check   │     │  checkov (HIGH/CRITICAL) │
 │  terraform init         │     │  trivy SCA (advisory)    │
 │  terraform validate     │     │  SARIF → Security tab    │
 │  tflint                 │     │                          │
@@ -153,11 +153,11 @@ PR opened / updated
               │  (ADVISORY)  ~2–3 min│
               │  PR only             │
               │                      │
-              │  infracost breakdown  │
-              │  (base branch)        │
-              │  infracost diff       │
-              │  (PR vs base)         │
-              │  PR comment updated   │
+              │  infracost breakdown │
+              │  (base branch)       │
+              │  infracost diff      │
+              │  (PR vs base)        │
+              │  PR comment updated  │
               └──────────────────────┘
 ```
 
