@@ -33,7 +33,11 @@ A centralized GitHub Actions reusable workflows repository for Terraform, Python
 
 ### What this is
 
-`shared-pipelines` is a GitHub Actions reusable workflows repository. It contains a curated set of CI/CD workflows that any repository in the organization can call via `uses: org/shared-pipelines/.github/workflows/<workflow>.yml@v1`. The consuming repository does not define any pipeline logic itself — it delegates entirely to the workflows defined here.
+`shared-pipelines` is a GitHub Actions reusable workflows repository. It contains a curated set of CI/CD workflows that any repository in the organization can call via 
+
+`uses: shaposhnikoff/my_shared_pipeline/.github/workflows/<workflow>.yml@main`.
+
+The consuming repository does not define any pipeline logic itself — it delegates entirely to the workflows defined here.
 
 ### Why it exists
 
@@ -91,13 +95,14 @@ calling-repo/                          ← any product repository
 Each product repository contains a single `ci.yml` that delegates all work to this repository. No pipeline logic lives in the product repository.
 
 ```
-org/calling-repo/.github/workflows/ci.yml
+shaposhnikoff/my_shared_pipeline/.github/workflows/ci.yml
     │
-    ├── uses: org/shared-pipelines/.github/workflows/shared-lint.yml@v1
-    ├── uses: org/shared-pipelines/.github/workflows/shared-terraform.yml@v1
-    ├── uses: org/shared-pipelines/.github/workflows/shared-security.yml@v1
-    └── uses: org/shared-pipelines/.github/workflows/shared-cost.yml@v1
+    ├── uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-lint.yml@v1
+    ├── uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-terraform.yml@v1
+    ├── uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-security.yml@v1
+    └── uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-cost.yml@v1
 ```
+
 
 ### Pipeline flow
 
@@ -252,7 +257,7 @@ jobs:
       needs.changes.outputs.terraform == 'true' ||
       needs.changes.outputs.python == 'true' ||
       needs.changes.outputs.docker == 'true'
-    uses: org/shared-pipelines/.github/workflows/shared-lint.yml@v1
+    uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-lint.yml@v1
     with:
       python-version: "3.11"
       terraform-version: "1.9.x"
@@ -263,7 +268,7 @@ jobs:
   terraform:
     needs: lint
     if: needs.changes.outputs.terraform == 'true'
-    uses: org/shared-pipelines/.github/workflows/shared-terraform.yml@v1
+    uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-terraform.yml@v1
     with:
       working-directory: "./terraform"
       aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
@@ -272,7 +277,7 @@ jobs:
   # ── Stage 3b: Security scanning (BLOCKING for checkov) ─────────────────────
   security:
     needs: lint
-    uses: org/shared-pipelines/.github/workflows/shared-security.yml@v1
+    uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-security.yml@v1
     with:
       working-directory: "./terraform"
       fail-on-severity: "HIGH"
@@ -282,7 +287,7 @@ jobs:
   cost:
     needs: [terraform, security]
     if: github.event_name == 'pull_request'
-    uses: org/shared-pipelines/.github/workflows/shared-cost.yml@v1
+    uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-cost.yml@v1
     with:
       terraform-dir: "./terraform"
       aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
