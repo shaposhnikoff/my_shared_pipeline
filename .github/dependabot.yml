@@ -1,14 +1,16 @@
 # .github/dependabot.yml
 #
-# Keeps GitHub Actions SHAs and Python linter versions up to date automatically.
+# Keeps GitHub Actions version tags and Python linter versions up to date automatically.
 # Dependabot opens a PR when new versions are released — the team reviews and merges.
 #
-# This is critical when actions are SHA-pinned: without Dependabot, pinned SHAs
-# would never update and security patches would be silently missed.
+# Exact action tags do not update automatically; Dependabot prevents security
+# and maintenance releases from being silently missed.
+
+---
 
 version: 2
 updates:
-  # ── GitHub Actions (including SHA-pinned actions) ─────────────────────────
+  # ── GitHub Actions exact version tags ─────────────────────────────────────
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

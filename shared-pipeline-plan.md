@@ -113,21 +113,21 @@ concurrency:
 
 jobs:
   secrets:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v4.2.2
         with:
           fetch-depth: 0          # gitleaks нужна вся история
-      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b024a1bb7cf9b1a50d3b8d  # v2.3.9
+      - uses: gitleaks/gitleaks-action@v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   yaml-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v4.2.2
       - name: Install linters
         run: |
           python -m venv /tmp/lint-venv
@@ -136,11 +136,11 @@ jobs:
       - run: yamllint -c .yamllint.yml .
 
   python-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2a  # v5.3.3
+      - uses: actions/checkout@v4.2.2
+      - uses: actions/setup-python@v5.3.0
         with:
           python-version: ${{ inputs.python-version }}
           cache: pip
@@ -154,37 +154,37 @@ jobs:
       - run: bandit -r . -ll -ii  # HIGH severity + HIGH confidence
 
   shell-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38  # 2.0.0
+      - uses: actions/checkout@v4.2.2
+      - uses: ludeeus/action-shellcheck@2.0.0
 
   dockerfile-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
+      - uses: actions/checkout@v4.2.2
+      - uses: hadolint/hadolint-action@v3.1.0
         with:
           recursive: true
 
   terraform-lint:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef065  # v3.1.2
+      - uses: actions/checkout@v4.2.2
+      - uses: hashicorp/setup-terraform@v3.1.2
         with:
           terraform_version: ${{ inputs.terraform-version }}
-      - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf  # v4.2.2
+      - uses: actions/cache@v4.2.2
         with:
           path: ~/.tflint.d/plugins
           key: tflint-${{ hashFiles('.tflint.hcl') }}
-      - uses: terraform-linters/setup-tflint@19a52fbac37dacb22a09518e4ef6ee234f2d4987  # v4.0.0
+      - uses: terraform-linters/setup-tflint@v4.0.0
       - run: terraform fmt -check -recursive
       - run: terraform init -backend=false
       - run: terraform validate
@@ -220,11 +220,11 @@ concurrency:
 
 jobs:
   checkov:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: bridgecrewio/checkov-action@c77d2e7571d74e81d94a80bbda51b1b0e76e0a5a  # v20250201
+      - uses: actions/checkout@v4.2.2
+      - uses: bridgecrewio/checkov-action@v12.3088.0
         with:
           directory: ${{ inputs.working-directory }}
           # Расширенный набор фреймворков: IaC + секреты + dockerfile + GHA
@@ -232,17 +232,17 @@ jobs:
           soft_fail: false
           output_format: sarif
           output_file_path: results.sarif
-      - uses: github/codeql-action/upload-sarif@f09c1c0a094aa517d4f3abde240c468bea46614c  # v3.28.5
+      - uses: github/codeql-action/upload-sarif@v4.32.6
         if: always()
         with:
           sarif_file: results.sarif
 
   trivy:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: aquasecurity/trivy-action@18f2a56c4e3b6b12b2a6b7d5e9c0a1f3d8e7b2c4  # v0.30.0
+      - uses: actions/checkout@v4.2.2
+      - uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
           scan-ref: .
@@ -250,7 +250,7 @@ jobs:
           exit-code: 0          # advisory, не блокирует
           format: sarif
           output: trivy.sarif
-      - uses: github/codeql-action/upload-sarif@f09c1c0a094aa517d4f3abde240c468bea46614c  # v3.28.5
+      - uses: github/codeql-action/upload-sarif@v4.32.6
         if: always()
         with:
           sarif_file: trivy.sarif
@@ -290,31 +290,31 @@ concurrency:
 
 jobs:
   terraform:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v4.2.2
 
       # OIDC auth — выполняется только если передан aws-role-arn
-      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.5
+      - uses: aws-actions/configure-aws-credentials@v4.3.1
         if: inputs.aws-role-arn != ''
         with:
           role-to-assume: ${{ inputs.aws-role-arn }}
           aws-region: us-east-1
 
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269ef065  # v3.1.2
+      - uses: hashicorp/setup-terraform@v3.1.2
         with:
           terraform_version: ${{ inputs.terraform-version }}
 
-      - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf  # v4.2.2
+      - uses: actions/cache@v4.2.2
         with:
           path: ~/.tflint.d/plugins
           key: tflint-${{ hashFiles('.tflint.hcl') }}
 
-      - uses: terraform-linters/setup-tflint@19a52fbac37dacb22a09518e4ef6ee234f2d4987  # v4.0.0
+      - uses: terraform-linters/setup-tflint@v4.0.0
 
       - name: Terraform fmt check
         run: terraform fmt -check -recursive
@@ -361,13 +361,13 @@ concurrency:
 
 jobs:
   infracost:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v4.2.2
 
       # OIDC auth — нужен если Terraform читает remote state из S3/GCS
-      - uses: aws-actions/configure-aws-credentials@e3dd6a429d7300a6a4c196c26e071d42e0343502  # v4.0.5
+      - uses: aws-actions/configure-aws-credentials@v4.3.1
         if: inputs.aws-role-arn != ''
         with:
           role-to-assume: ${{ inputs.aws-role-arn }}
@@ -403,7 +403,7 @@ jobs:
             --out-file /tmp/infracost-diff.json
 
       # Публикуем/обновляем PR comment с результатами diff
-      - uses: infracost/actions/comment@v3
+      - uses: infracost/actions/comment@v3.0.1
         with:
           path: /tmp/infracost-diff.json
           behavior: update       # обновляет существующий PR comment
@@ -434,7 +434,7 @@ jobs:
   # Path-based filtering: определяем что изменилось,
   # чтобы не запускать лишние jobs
   changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -444,8 +444,8 @@ jobs:
       python: ${{ steps.filter.outputs.python }}
       docker: ${{ steps.filter.outputs.docker }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36  # v3.0.2
+      - uses: actions/checkout@v4.2.2
+      - uses: dorny/paths-filter@v3.0.2
         id: filter
         with:
           filters: |
@@ -527,28 +527,28 @@ concurrency:
 
 jobs:
   full-security-scan:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v4.2.2
 
-      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b024a1bb7cf9b1a50d3b8d  # v2.3.9
+      - uses: gitleaks/gitleaks-action@v2.3.9
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: bridgecrewio/checkov-action@c77d2e7571d74e81d94a80bbda51b1b0e76e0a5a  # v20250201
+      - uses: bridgecrewio/checkov-action@v12.3088.0
         with:
           framework: terraform,secrets,dockerfile,github_actions
           soft_fail: false
           output_format: sarif
           output_file_path: checkov.sarif
 
-      - uses: github/codeql-action/upload-sarif@f09c1c0a094aa517d4f3abde240c468bea46614c  # v3.28.5
+      - uses: github/codeql-action/upload-sarif@v4.32.6
         if: always()
         with:
           sarif_file: checkov.sarif
 
-      - uses: aquasecurity/trivy-action@18f2a56c4e3b6b12b2a6b7d5e9c0a1f3d8e7b2c4  # v0.30.0
+      - uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
           scan-ref: .
@@ -557,7 +557,7 @@ jobs:
           format: sarif
           output: trivy.sarif
 
-      - uses: github/codeql-action/upload-sarif@f09c1c0a094aa517d4f3abde240c468bea46614c  # v3.28.5
+      - uses: github/codeql-action/upload-sarif@v4.32.6
         if: always()
         with:
           sarif_file: trivy.sarif
@@ -640,24 +640,24 @@ regex = '''PERISCOPE_[A-Z0-9]{32}'''
 # Кэши которые дают максимальный эффект:
 
 # 1. Terraform providers (самые тяжёлые)
-- uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf  # v4.2.2
+- uses: actions/cache@v4.2.2
   with:
     path: ~/.terraform.d/plugin-cache
     key: tf-providers-${{ hashFiles('**/.terraform.lock.hcl') }}
 
 # 2. tflint plugins
-- uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf  # v4.2.2
+- uses: actions/cache@v4.2.2
   with:
     path: ~/.tflint.d/plugins
     key: tflint-${{ hashFiles('.tflint.hcl') }}
 
 # 3. Python deps (setup-python делает сам при cache: pip)
-- uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2a  # v5.3.3
+- uses: actions/setup-python@v5.3.0
   with:
     cache: pip
 
 # 4. Trivy DB (обновляется раз в 24ч)
-- uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf  # v4.2.2
+- uses: actions/cache@v4.2.2
   with:
     path: ~/.cache/trivy
     key: trivy-db-${{ steps.date.outputs.date }}
@@ -690,7 +690,7 @@ regex = '''PERISCOPE_[A-Z0-9]{32}'''
 - [ ] Подключить все репо
 - [ ] Документация в README shared-pipelines
 - [ ] Настроить branch protection rules (required checks)
-- [ ] Настроить dependabot для автообновления action SHA
+- [ ] Настроить dependabot для автообновления action version tags
 - [ ] Ретроспектива: что блокирует vs advisory
 
 ---
@@ -812,14 +812,14 @@ repos:
 
 ### `.github/dependabot.yml`
 
-Автоматическое обновление SHA actions через Dependabot.
-Dependabot создаёт PR при выходе новых версий — SHA в `uses:` обновляются автоматически.
+Автоматическое обновление action version tags через Dependabot.
+Dependabot создаёт PR при выходе новых версий — точные tags в `uses:` обновляются автоматически.
 
 ```yaml
 # .github/dependabot.yml
 version: 2
 updates:
-  # Обновление GitHub Actions (включая pinned SHA)
+  # Обновление GitHub Actions exact version tags
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

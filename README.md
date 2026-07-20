@@ -35,7 +35,7 @@ A centralized GitHub Actions reusable workflows repository for Terraform, Python
 
 `shared-pipelines` is a GitHub Actions reusable workflows repository. It contains a curated set of CI/CD workflows that any repository in the organization can call via 
 
-`uses: shaposhnikoff/my_shared_pipeline/.github/workflows/<workflow>.yml@main`.
+`uses: shaposhnikoff/my_shared_pipeline/.github/workflows/<workflow>.yml@v1`.
 
 The consuming repository does not define any pipeline logic itself — it delegates entirely to the workflows defined here.
 
@@ -45,7 +45,7 @@ Without a shared pipeline, each repository independently defines its own CI/CD w
 
 - **Drift**: teams use different versions of the same tools, or skip checks entirely.
 - **Toil**: fixing a lint rule or bumping a tool version requires opening PRs in every repository.
-- **Inconsistent security posture**: one repository might pin action SHAs while another uses `@main`, and security checks may differ in severity thresholds.
+- **Inconsistent security posture**: one repository might use exact version tags while another uses a broad tag or `@main`, and security checks may differ in severity thresholds.
 
 `shared-pipelines` solves all three problems by centralizing workflow definitions. When a fix or improvement is merged here, every consuming repository picks it up automatically on the next pipeline run without any changes on their end.
 
@@ -69,7 +69,7 @@ Without a shared pipeline, each repository independently defines its own CI/CD w
 ```
 shared-pipelines/                      ← this repository
 ├── .github/
-│   ├── dependabot.yml                 ← weekly SHA + pip updates
+│   ├── dependabot.yml                 ← weekly Actions + pip updates
 │   └── workflows/
 │       ├── shared-lint.yml            ← reusable: all linters
 │       ├── shared-security.yml        ← reusable: checkov + trivy + SARIF
@@ -224,7 +224,7 @@ jobs:
   # ── Path-based filtering ────────────────────────────────────────────────────
   # Determines what changed so downstream jobs only run when relevant.
   changes:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     permissions:
       contents: read
@@ -234,8 +234,8 @@ jobs:
       python: ${{ steps.filter.outputs.python }}
       docker: ${{ steps.filter.outputs.docker }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36  # v3.0.2
+      - uses: actions/checkout@v4.2.2
+      - uses: dorny/paths-filter@v3.0.2
         id: filter
         with:
           filters: |
@@ -395,8 +395,8 @@ None.
 
 | Job ID | Tool(s) | What it checks | Blocking |
 |---|---|---|---|
-| `checkov` | checkov v20250201 | Scans Terraform, secrets, Dockerfile, and GitHub Actions workflows for security misconfigurations. Outputs SARIF to the Security tab. HIGH and CRITICAL findings fail the job. MEDIUM and LOW are soft-fail (reported but do not block). | YES (HIGH/CRITICAL) |
-| `trivy` | trivy v0.30.0 | Scans the filesystem for known CVEs in dependencies (SCA). Outputs SARIF to the Security tab. `exit-code: 0` — always exits successfully regardless of findings. | NO |
+| `checkov` | checkov v12.3088.0 | Scans Terraform, secrets, Dockerfile, and GitHub Actions workflows for security misconfigurations. Outputs SARIF to the Security tab. HIGH and CRITICAL findings fail the job. MEDIUM and LOW are soft-fail (reported but do not block). | YES (HIGH/CRITICAL) |
+| `trivy` | trivy 0.35.0 | Scans the filesystem for known CVEs in dependencies (SCA). Outputs SARIF to the Security tab. `exit-code: 0` — always exits successfully regardless of findings. | NO |
 
 **Frameworks scanned by checkov:** `terraform`, `secrets`, `dockerfile`, `github_actions`
 
@@ -527,7 +527,7 @@ rules:
 ```
 
 **Key decisions:**
-- `line-length: 120` — allows longer lines than the yamllint default of 80. This accommodates GitHub Actions workflow files which frequently have long `uses:` lines with SHA comments.
+- `line-length: 120` — allows longer lines than the yamllint default of 80. This accommodates GitHub Actions workflow files with long action and reusable-workflow references.
 - `truthy: allowed-values: ['true', 'false']` — rejects ambiguous truthy values (`yes`, `no`, `on`, `off`) which have caused incidents when Kubernetes and Helm YAML files were misinterpreted.
 
 ### `ruff.toml`
@@ -609,7 +609,7 @@ soft-fail-on:
 - `terraform` — checks Terraform resource configurations (S3 encryption, security groups, IAM policies, etc.)
 - `secrets` — detects hardcoded secrets in any file type
 - `dockerfile` — checks Dockerfile instructions for best practices
-- `github_actions` — checks GitHub Actions workflow files (unpinned actions, overly broad permissions, etc.)
+- `github_actions` — checks GitHub Actions workflow files (broad or unversioned action references, overly broad permissions, etc.)
 
 **Severity model:**
 - HIGH and CRITICAL: hard fail (job exits non-zero, PR is blocked).
@@ -744,30 +744,28 @@ updates:
 </details>
 
 Dependabot opens PRs every Monday at 06:00 UTC to update:
-1. **GitHub Actions**: all action SHAs are updated when new releases are tagged. Minor and patch updates are grouped into a single PR.
+1. **GitHub Actions**: exact action version tags are updated when new releases are published. Minor and patch updates are grouped into a single PR.
 2. **pip**: all packages in `requirements-lint.txt` are updated to their latest compatible versions.
 
 ---
 
 ## 6. Security Design
 
-### SHA pinning
+### Exact version tags
 
-Every `uses:` reference in every workflow in this repository pins the action to a full 40-character git SHA, not a mutable tag like `@v4` or `@main`.
+Every external action reference uses an exact release tag such as `@v4.2.2`, not a broad major tag like `@v4` or a branch such as `@main`.
 
 ```yaml
-# Correct: pinned to exact commit
-- uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+# Correct: exact release tag
+- uses: actions/checkout@v4.2.2
 
-# Wrong: tag is mutable, anyone can push a new commit to v4
+# Wrong: broad major tag can move between releases
 - uses: actions/checkout@v4
 ```
 
-**Why this matters:** A mutable tag can be moved by the action's maintainer (or an attacker who compromises the maintainer's account) to point at malicious code. A SHA is immutable. This practice is called supply chain attack mitigation and is required for SLSA compliance.
+Exact tags make the selected release readable and prevent automatic upgrades to a new minor or patch release. Tags remain movable by repository maintainers, so updates must still be reviewed and trusted as third-party supply-chain changes.
 
-The human-readable version tag is preserved as an inline comment (`# v4.2.2`) so you can understand what version is pinned without looking it up.
-
-Dependabot automatically opens PRs to update SHAs when new versions are released, so pinning does not mean falling behind.
+Dependabot automatically opens PRs when newer tags are released, so exact version selection does not mean falling behind.
 
 ### Permissions model
 
@@ -883,7 +881,7 @@ gh variable set AWS_ROLE_ARN \
 ### Dependabot for supply chain security
 
 `.github/dependabot.yml` configures Dependabot to open weekly PRs updating:
-- All action SHAs in workflow files (includes SHAs in `shared-pipelines` itself)
+- All external action version tags in workflow files
 - All packages in `requirements-lint.txt`
 
 Review Dependabot PRs every Monday. The pipeline runs against each Dependabot PR. If it passes, merge it. If it fails, check the changelog for the bumped tool and decide whether to skip the version or update configuration.
@@ -1504,17 +1502,14 @@ If your consuming workflow has a job that must not be interrupted, set `cancel-i
 
 **Step 1 — Test the tool locally first.** Confirm the tool works on a representative codebase, understand its exit codes, and identify which configuration it uses.
 
-**Step 2 — Find the SHA of the action (if adding a third-party action).** Never use a mutable tag.
+**Step 2 — Select and verify an exact release tag for the action.** Do not use a broad major tag or branch.
 
 ```bash
-# Get the SHA for a specific tag
-gh api repos/OWNER/REPO/git/refs/tags/vX.Y.Z --jq '.object.sha'
-
-# If the tag points to a tag object (annotated tag), get the underlying commit SHA
-gh api repos/OWNER/REPO/git/tags/SHA --jq '.object.sha'
+# Verify that the exact release tag exists
+gh api repos/OWNER/REPO/git/refs/tags/vX.Y.Z --jq '.ref'
 ```
 
-**Step 3 — Add the step to the appropriate workflow file.** Place it in the correct stage. Add `timeout-minutes:` to the step if it can hang. Add an inline SHA comment.
+**Step 3 — Add the step to the appropriate workflow file.** Place it in the correct stage and reference the verified exact tag. Add `timeout-minutes:` to the job if it can hang.
 
 **Step 4 — Add configuration** to the relevant config file in the repo root (for example, a new `.toolname.yml`).
 
@@ -1648,7 +1643,7 @@ The following metrics define the success of this pipeline. Review them monthly u
 | Cost visibility coverage | 100% of Terraform repos | — | Count repos with `shared-cost.yml` call / total repos with `.tf` files |
 | Secret leak incidents | 0 | — | Count security incidents where a secret was committed and reached the remote (gitleaks should catch these at PR time) |
 | Long-lived cloud credentials in CI | 0 | — | Audit GitHub Secrets across all repos for keys named `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `AZURE_CREDENTIALS` etc.; target is zero |
-| Unpinned actions | 0 | — | Grep all workflow files across all repos for `uses:` lines that do not match a 40-char SHA pattern |
+| Broad or unversioned action refs | 0 | — | Audit external `uses:` references for exact `vX.Y.Z` or `X.Y.Z` tags |
 
 ### Metric explanations
 
@@ -1670,17 +1665,17 @@ gitleaks running on every PR and on every commit in the scheduled scan should pr
 **Long-lived cloud credentials in CI: 0**
 Audit all repository Secrets across the organization using the GitHub API. Any repository storing `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `ARM_CLIENT_SECRET`, or similar static credentials should be migrated to OIDC. Long-lived credentials cannot be rotated automatically, cannot be scoped to specific workflows, and pose a significant blast radius if compromised.
 
-**Unpinned actions: 0**
-All `uses:` references in all workflow files across all repositories must pin to a full 40-character SHA. Run this audit monthly:
+**Broad or unversioned action refs: 0**
+All external action references must use an exact semantic version tag. Run this audit monthly:
 
 ```bash
-# Find all workflow files across all repos and grep for unpinned uses
-# This assumes you have all repos checked out locally, or use the GitHub API
-grep -rn 'uses:' .github/workflows/ | grep -v '@[0-9a-f]\{40\}'
+# Find external action refs that do not end in an exact X.Y.Z or vX.Y.Z tag
+rg -n 'uses:' .github/workflows \
+  | grep -Ev '@v?[0-9]+\.[0-9]+\.[0-9]+([[:space:]#]|$)'
 ```
 
-Any line that does not match a 40-char SHA is unpinned and must be fixed.
+Review matches and exclude intentional reusable-workflow references such as `@v1`; every third-party action match must be fixed.
 
 ---
 
-*This document was last updated: 2026-03-08. If you find an error or a gap, open a PR against `shared-pipelines` with the correction.*
+*This document was last updated: 2026-07-19. If you find an error or a gap, open a PR against `shared-pipelines` with the correction.*
