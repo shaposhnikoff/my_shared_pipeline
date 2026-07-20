@@ -234,8 +234,8 @@ jobs:
       python: ${{ steps.filter.outputs.python }}
       docker: ${{ steps.filter.outputs.docker }}
     steps:
-      - uses: actions/checkout@v4.2.2
-      - uses: dorny/paths-filter@v3.0.2
+      - uses: actions/checkout@v7.0.0
+      - uses: dorny/paths-filter@v4.0.2
         id: filter
         with:
           filters: |
@@ -357,7 +357,7 @@ None. This workflow uses only `GITHUB_TOKEN` (automatically provided by GitHub A
 
 | Job ID | Tool(s) | What it checks | Blocking |
 |---|---|---|---|
-| `secrets` | gitleaks v2.3.9 | Scans the full git history (`fetch-depth: 0`) for secrets, API keys, tokens, and credentials. Uses `.gitleaks.toml` configuration. | YES |
+| `secrets` | gitleaks v3.0.0 | Scans the full git history (`fetch-depth: 0`) for secrets, API keys, tokens, and credentials. Uses `.gitleaks.toml` configuration. | YES |
 | `yaml-lint` | yamllint 1.35.1 | Validates YAML syntax and enforces style rules from `.yamllint.yml`. | YES |
 | `python-lint` | ruff 0.4.4, black 24.4.2, bandit 1.7.8 | Lints Python code for style, formatting, and HIGH/CRITICAL security issues. | YES |
 | `shell-lint` | shellcheck | Checks all `.sh` and `.bash` scripts for common errors and POSIX compliance issues. | YES |
@@ -757,7 +757,7 @@ Every external action reference uses an exact release tag such as `@v4.2.2`, not
 
 ```yaml
 # Correct: exact release tag
-- uses: actions/checkout@v4.2.2
+- uses: actions/checkout@v7.0.0
 
 # Wrong: broad major tag can move between releases
 - uses: actions/checkout@v4

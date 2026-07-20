@@ -38,13 +38,13 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30  # higher than per-workflow jobs — runs all 3 tools sequentially
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0  # gitleaks scans full history
 
       # ── Secrets ─────────────────────────────────────────────────────────
       - name: gitleaks (full history)
-        uses: gitleaks/gitleaks-action@v2.3.9
+        uses: gitleaks/gitleaks-action@v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -66,7 +66,7 @@ jobs:
 
       # ── SCA / CVE scanning ───────────────────────────────────────────────
       - name: Cache Trivy DB
-        uses: actions/cache@v4.2.2
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.cache/trivy
           key: trivy-db-${{ github.run_id }}

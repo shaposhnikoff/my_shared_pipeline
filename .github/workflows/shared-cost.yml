@@ -63,20 +63,20 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
         if: steps.check-key.outputs.skip != 'true'
         with:
           fetch-depth: 0  # needed to checkout base branch SHA below
 
       # OIDC AWS auth — only runs if aws-role-arn is provided
-      - uses: aws-actions/configure-aws-credentials@v4.3.1
+      - uses: aws-actions/configure-aws-credentials@v6.2.2
         if: steps.check-key.outputs.skip != 'true' && inputs.aws-role-arn != ''
         with:
           role-to-assume: ${{ inputs.aws-role-arn }}
           aws-region: us-east-1
           role-session-name: gha-cost-${{ github.run_id }}
 
-      - uses: infracost/actions/setup@v3.0.1
+      - uses: infracost/actions/setup@v4.2.0
         if: steps.check-key.outputs.skip != 'true'
         with:
           api-key: ${{ secrets.infracost-api-key }}

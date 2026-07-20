@@ -116,10 +116,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0          # gitleaks нужна вся история
-      - uses: gitleaks/gitleaks-action@v2.3.9
+      - uses: gitleaks/gitleaks-action@v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -127,7 +127,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
       - name: Install linters
         run: |
           python -m venv /tmp/lint-venv
@@ -139,8 +139,8 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4.2.2
-      - uses: actions/setup-python@v5.3.0
+      - uses: actions/checkout@v7.0.0
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ inputs.python-version }}
           cache: pip
@@ -157,14 +157,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
       - uses: ludeeus/action-shellcheck@2.0.0
 
   dockerfile-lint:
     runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
       - uses: hadolint/hadolint-action@v3.1.0
         with:
           recursive: true
@@ -176,15 +176,15 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@v4.2.2
-      - uses: hashicorp/setup-terraform@v3.1.2
+      - uses: actions/checkout@v7.0.0
+      - uses: hashicorp/setup-terraform@v4.0.1
         with:
           terraform_version: ${{ inputs.terraform-version }}
-      - uses: actions/cache@v4.2.2
+      - uses: actions/cache@v6.1.0
         with:
           path: ~/.tflint.d/plugins
           key: tflint-${{ hashFiles('.tflint.hcl') }}
-      - uses: terraform-linters/setup-tflint@v4.0.0
+      - uses: terraform-linters/setup-tflint@v6.3.0
       - run: terraform fmt -check -recursive
       - run: terraform init -backend=false
       - run: terraform validate
@@ -223,7 +223,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
       - uses: bridgecrewio/checkov-action@v12.3088.0
         with:
           directory: ${{ inputs.working-directory }}
@@ -241,7 +241,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
       - uses: aquasecurity/trivy-action@0.35.0
         with:
           scan-type: fs
@@ -296,25 +296,25 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
 
       # OIDC auth — выполняется только если передан aws-role-arn
-      - uses: aws-actions/configure-aws-credentials@v4.3.1
+      - uses: aws-actions/configure-aws-credentials@v6.2.2
         if: inputs.aws-role-arn != ''
         with:
           role-to-assume: ${{ inputs.aws-role-arn }}
           aws-region: us-east-1
 
-      - uses: hashicorp/setup-terraform@v3.1.2
+      - uses: hashicorp/setup-terraform@v4.0.1
         with:
           terraform_version: ${{ inputs.terraform-version }}
 
-      - uses: actions/cache@v4.2.2
+      - uses: actions/cache@v6.1.0
         with:
           path: ~/.tflint.d/plugins
           key: tflint-${{ hashFiles('.tflint.hcl') }}
 
-      - uses: terraform-linters/setup-tflint@v4.0.0
+      - uses: terraform-linters/setup-tflint@v6.3.0
 
       - name: Terraform fmt check
         run: terraform fmt -check -recursive
@@ -364,10 +364,10 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
 
       # OIDC auth — нужен если Terraform читает remote state из S3/GCS
-      - uses: aws-actions/configure-aws-credentials@v4.3.1
+      - uses: aws-actions/configure-aws-credentials@v6.2.2
         if: inputs.aws-role-arn != ''
         with:
           role-to-assume: ${{ inputs.aws-role-arn }}
@@ -444,8 +444,8 @@ jobs:
       python: ${{ steps.filter.outputs.python }}
       docker: ${{ steps.filter.outputs.docker }}
     steps:
-      - uses: actions/checkout@v4.2.2
-      - uses: dorny/paths-filter@v3.0.2
+      - uses: actions/checkout@v7.0.0
+      - uses: dorny/paths-filter@v4.0.2
         id: filter
         with:
           filters: |
@@ -530,9 +530,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
 
-      - uses: gitleaks/gitleaks-action@v2.3.9
+      - uses: gitleaks/gitleaks-action@v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -640,24 +640,24 @@ regex = '''PERISCOPE_[A-Z0-9]{32}'''
 # Кэши которые дают максимальный эффект:
 
 # 1. Terraform providers (самые тяжёлые)
-- uses: actions/cache@v4.2.2
+- uses: actions/cache@v6.1.0
   with:
     path: ~/.terraform.d/plugin-cache
     key: tf-providers-${{ hashFiles('**/.terraform.lock.hcl') }}
 
 # 2. tflint plugins
-- uses: actions/cache@v4.2.2
+- uses: actions/cache@v6.1.0
   with:
     path: ~/.tflint.d/plugins
     key: tflint-${{ hashFiles('.tflint.hcl') }}
 
 # 3. Python deps (setup-python делает сам при cache: pip)
-- uses: actions/setup-python@v5.3.0
+- uses: actions/setup-python@v7.0.0
   with:
     cache: pip
 
 # 4. Trivy DB (обновляется раз в 24ч)
-- uses: actions/cache@v4.2.2
+- uses: actions/cache@v6.1.0
   with:
     path: ~/.cache/trivy
     key: trivy-db-${{ steps.date.outputs.date }}

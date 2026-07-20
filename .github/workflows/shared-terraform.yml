@@ -54,29 +54,29 @@ jobs:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@v4.2.2
+      - uses: actions/checkout@v7.0.0
 
       # OIDC AWS auth — only runs if aws-role-arn is provided
       # Required when Terraform reads remote state from S3 or uses AWS provider
-      - uses: aws-actions/configure-aws-credentials@v4.3.1
+      - uses: aws-actions/configure-aws-credentials@v6.2.2
         if: inputs.aws-role-arn != ''
         with:
           role-to-assume: ${{ inputs.aws-role-arn }}
           aws-region: us-east-1
           role-session-name: gha-tf-${{ github.run_id }}
 
-      - uses: hashicorp/setup-terraform@v3.1.2
+      - uses: hashicorp/setup-terraform@v4.0.1
         with:
           terraform_version: ${{ inputs.terraform-version }}
 
       # Cache tflint plugins — keyed on .tflint.hcl content hash
-      - uses: actions/cache@v4.2.2
+      - uses: actions/cache@v6.1.0
         with:
           path: ~/.tflint.d/plugins
           key: tflint-${{ hashFiles('.tflint.hcl') }}
           restore-keys: tflint-
 
-      - uses: terraform-linters/setup-tflint@v4.0.0
+      - uses: terraform-linters/setup-tflint@v6.3.0
 
       - name: terraform fmt check
         run: terraform fmt -check -recursive -diff
