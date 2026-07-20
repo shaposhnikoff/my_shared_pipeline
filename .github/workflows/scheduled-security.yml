@@ -73,8 +73,9 @@ jobs:
           restore-keys: trivy-db-
 
       - name: trivy (SCA)
-        uses: aquasecurity/trivy-action@0.35.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
+          cache: false  # DB cache is managed by the preceding actions/cache step
           scan-type: fs
           scan-ref: .
           severity: HIGH,CRITICAL

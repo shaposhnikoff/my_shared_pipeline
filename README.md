@@ -396,7 +396,7 @@ None.
 | Job ID | Tool(s) | What it checks | Blocking |
 |---|---|---|---|
 | `checkov` | checkov v12.3088.0 | Scans Terraform, secrets, Dockerfile, and GitHub Actions workflows for security misconfigurations. Outputs SARIF to the Security tab. HIGH and CRITICAL findings fail the job. MEDIUM and LOW are soft-fail (reported but do not block). | YES (HIGH/CRITICAL) |
-| `trivy` | trivy 0.35.0 | Scans the filesystem for known CVEs in dependencies (SCA). Outputs SARIF to the Security tab. `exit-code: 0` — always exits successfully regardless of findings. | NO |
+| `trivy` | trivy 0.36.0 | Scans the filesystem for known CVEs in dependencies (SCA). Outputs SARIF to the Security tab. `exit-code: 0` — always exits successfully regardless of findings. | NO |
 
 **Frameworks scanned by checkov:** `terraform`, `secrets`, `dockerfile`, `github_actions`
 
