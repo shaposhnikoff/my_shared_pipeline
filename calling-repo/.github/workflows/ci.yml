@@ -12,6 +12,8 @@
 #   - Terraform changes      → lint + terraform + security + cost
 #   - Any other changes      → lint only (secrets + yaml)
 
+---
+
 name: CI
 
 on:
@@ -31,19 +33,19 @@ jobs:
   # ── Stage 0: Detect changed files ─────────────────────────────────────────
   changes:
     name: Detect Changes
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 5
     permissions:
       contents: read
       pull-requests: read
     outputs:
       terraform: ${{ steps.filter.outputs.terraform }}
-      python:    ${{ steps.filter.outputs.python }}
-      docker:    ${{ steps.filter.outputs.docker }}
+      python: ${{ steps.filter.outputs.python }}
+      docker: ${{ steps.filter.outputs.docker }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v7.0.0
 
-      - uses: dorny/paths-filter@de90cc6fb38fc0963ad72b210f1f284cd68cea36  # v3.0.2
+      - uses: dorny/paths-filter@v4.0.2
         id: filter
         with:
           filters: |
@@ -73,7 +75,7 @@ jobs:
       needs.changes.outputs.docker    == 'true'
     uses: org/shared-pipelines/.github/workflows/shared-lint.yml@v1
     with:
-      python-version:    "3.11"
+      python-version: "3.11"
       terraform-version: "1.9.x"
       working-directory: "./terraform"
     secrets: inherit
@@ -81,7 +83,7 @@ jobs:
   # ── Stage 3a: Terraform validate + tflint ─────────────────────────────────
   terraform:
     name: Terraform
-    needs: lint
+    needs: [lint, changes]
     if: needs.changes.outputs.terraform == 'true'
     uses: org/shared-pipelines/.github/workflows/shared-terraform.yml@v1
     with:
@@ -103,11 +105,11 @@ jobs:
   # ── Stage 4: Cost estimation (advisory, PR only) ──────────────────────────
   cost:
     name: Cost
-    needs: [terraform, security]
+    needs: [terraform, security, changes]
     if: github.event_name == 'pull_request' && needs.changes.outputs.terraform == 'true'
     uses: org/shared-pipelines/.github/workflows/shared-cost.yml@v1
     with:
       terraform-dir: "./terraform"
-      aws-role-arn:  ${{ vars.AWS_ROLE_ARN }}
+      aws-role-arn: ${{ vars.AWS_ROLE_ARN }}
     secrets:
       infracost-api-key: ${{ secrets.INFRACOST_API_KEY }}

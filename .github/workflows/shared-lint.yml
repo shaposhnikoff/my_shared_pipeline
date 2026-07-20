@@ -7,7 +7,9 @@
 #   2. Shared file from my_shared_pipeline (sensible defaults)
 #
 # Called by consuming repos via:
-#   uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-lint.yml@main
+#   uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-lint.yml@v1
+
+---
 
 name: Shared Lint
 
@@ -45,31 +47,31 @@ jobs:
 
   secrets:
     name: Secrets Scan (gitleaks)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0  # gitleaks needs full history to scan all commits
 
-      - uses: gitleaks/gitleaks-action@ff98106e4c7b2bc287b24eaf42907196329070c7  # v2.3.9
+      - uses: gitleaks/gitleaks-action@v3.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   yaml-lint:
     name: YAML Lint
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v7.0.0
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v7.0.0
         with:
           repository: shaposhnikoff/my_shared_pipeline
           path: _shared
           fetch-depth: 1
 
-      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ inputs.python-version }}
 
@@ -98,18 +100,18 @@ jobs:
 
   python-lint:
     name: Python Lint (ruff + black + bandit)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v7.0.0
 
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v7.0.0
         with:
           repository: shaposhnikoff/my_shared_pipeline
           path: _shared
           fetch-depth: 1
 
-      - uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b  # v5.3.0
+      - uses: actions/setup-python@v7.0.0
         with:
           python-version: ${{ inputs.python-version }}
           cache: pip
@@ -137,23 +139,26 @@ jobs:
         run: black --check .
 
       - name: bandit (HIGH severity + HIGH confidence only)
-        run: bandit -r . -lll -iii --exclude ./_shared,./tasmota/old,./tasmota_web,./tasmota/tasmota_list_devices_web.py,./mediamtx
+        run: >-
+          bandit -r . -lll -iii
+          --exclude ./_shared,./tasmota/old,./tasmota_web,
+          ./tasmota/tasmota_list_devices_web.py,./mediamtx
 
   shell-lint:
     name: Shell Lint (shellcheck)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v7.0.0
 
-      - uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38  # 2.0.0
+      - uses: ludeeus/action-shellcheck@2.0.0
 
   dockerfile-lint:
     name: Dockerfile Lint (hadolint)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v7.0.0
 
       - name: Check for Dockerfiles
         id: df-check
@@ -165,7 +170,7 @@ jobs:
             echo "No Dockerfiles found, skipping hadolint."
           fi
 
-      - uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf  # v3.1.0
+      - uses: hadolint/hadolint-action@v3.1.0
         if: steps.df-check.outputs.has_dockerfiles == 'true'
         with:
           recursive: true
@@ -173,25 +178,25 @@ jobs:
 
   terraform-lint:
     name: Terraform Lint (fmt + validate + tflint)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     defaults:
       run:
         working-directory: ${{ inputs.working-directory }}
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683  # v4.2.2
+      - uses: actions/checkout@v7.0.0
 
-      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3.1.2
+      - uses: hashicorp/setup-terraform@v4.0.1
         with:
           terraform_version: ${{ inputs.terraform-version }}
 
-      - uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf  # v4.2.2
+      - uses: actions/cache@v6.1.0
         with:
           path: ~/.tflint.d/plugins
           key: tflint-${{ hashFiles('**/.tflint.hcl') }}
           restore-keys: tflint-
 
-      - uses: terraform-linters/setup-tflint@19a52fbac37dacb22a09518e4ef6ee234f2d4987  # v4.0.0
+      - uses: terraform-linters/setup-tflint@v6.3.0
 
       - name: Check for Terraform files
         id: tf-check

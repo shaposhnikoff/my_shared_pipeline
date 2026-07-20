@@ -363,7 +363,7 @@ terraform:
   name: Terraform
   needs: [lint, changes]
   if: needs.changes.outputs.terraform == 'true'  # ← Add this condition
-  uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-terraform.yml@main
+  uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-terraform.yml@v1
   ...
 ```
 
@@ -431,7 +431,7 @@ git commit -m "style: auto-fix linting issues"
 
 ```yaml
 # .github/workflows/ci.yml
-uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-cost.yml@main  # ← Ensure @main (not pinned to old commit)
+uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-cost.yml@v1  # exact major release tag
 ```
 
 **Alternative:** Get a free Infracost API key:
@@ -483,7 +483,7 @@ Common issues:
 
 ### Advanced: Pin to Specific Version
 
-For production stability, pin workflows to a specific commit or tag:
+For production stability, pin workflows to a specific version tag:
 
 ```yaml
 # Instead of @main (tracks latest)
@@ -492,8 +492,6 @@ uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-lint.yml@main
 # Pin to tag (recommended for production)
 uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-lint.yml@v1.0.0
 
-# Or pin to commit SHA (most secure)
-uses: shaposhnikoff/my_shared_pipeline/.github/workflows/shared-lint.yml@52fcbbd5a4bfae29dd0ccb9673f0ca07295d355f
 ```
 
 ---
