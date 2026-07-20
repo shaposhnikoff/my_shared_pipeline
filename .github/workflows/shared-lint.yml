@@ -170,7 +170,7 @@ jobs:
             echo "No Dockerfiles found, skipping hadolint."
           fi
 
-      - uses: hadolint/hadolint-action@v3.1.0
+      - uses: hadolint/hadolint-action@v3.3.0
         if: steps.df-check.outputs.has_dockerfiles == 'true'
         with:
           recursive: true
