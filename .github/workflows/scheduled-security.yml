@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30  # higher than per-workflow jobs — runs all 3 tools sequentially
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0  # gitleaks scans full history
 
@@ -50,7 +50,7 @@ jobs:
 
       # ── IaC / config misconfig ───────────────────────────────────────────
       - name: checkov
-        uses: bridgecrewio/checkov-action@v12.3088.0
+        uses: bridgecrewio/checkov-action@v12.3114.0
         with:
           framework: terraform,secrets,dockerfile,github_actions
           soft_fail: false
@@ -59,7 +59,7 @@ jobs:
           config_file: .checkov.yml
 
       - name: Upload checkov SARIF
-        uses: github/codeql-action/upload-sarif@v4.32.6
+        uses: github/codeql-action/upload-sarif@v4.37.3
         if: always()
         with:
           sarif_file: checkov.sarif
@@ -84,7 +84,7 @@ jobs:
           output: trivy.sarif
 
       - name: Upload trivy SARIF
-        uses: github/codeql-action/upload-sarif@v4.32.6
+        uses: github/codeql-action/upload-sarif@v4.37.3
         if: always()
         with:
           sarif_file: trivy.sarif

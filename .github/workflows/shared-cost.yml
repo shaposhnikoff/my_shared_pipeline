@@ -63,13 +63,13 @@ jobs:
             echo "skip=false" >> $GITHUB_OUTPUT
           fi
 
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         if: steps.check-key.outputs.skip != 'true'
         with:
           fetch-depth: 0  # needed to checkout base branch SHA below
 
       # OIDC AWS auth — only runs if aws-role-arn is provided
-      - uses: aws-actions/configure-aws-credentials@v6.2.2
+      - uses: aws-actions/configure-aws-credentials@v6.2.3
         if: steps.check-key.outputs.skip != 'true' && inputs.aws-role-arn != ''
         with:
           role-to-assume: ${{ inputs.aws-role-arn }}
